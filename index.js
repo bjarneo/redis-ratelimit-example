@@ -1,4 +1,4 @@
-const redis = require('redis');
+const redis = require('async-redis');
 
 const client = redis.createClient({
     host: 'wy2x'
@@ -7,22 +7,40 @@ const client = redis.createClient({
 client.on('error', console.error);
 
 // default expire = 10 seconds
-async function rateLimit(key = 'ip', limit = 100, expire = 10) {
-    const setKey = (key) => `RL_${key}`;
+async function rateLimit(key = '127.0.0.1', limit = 10, expire = 10) {
+    // Set the rate limit key
+    const keyName = `RL:${key}`;
 
-    const keyName = setKey(key);
+    // Get the key from the redis instance
+    const count = await client.get(keyName);
+    
+    // Log for visuals
+    console.log(keyName)
+    
+    // If the count exceeds the limit, rate limit
+    if (count > limit) {
+        return true;
+    }
 
-    const rl = await client.multi().incr(keyName).expire(keyName, expire).exec((err, res) => console.log(err, res));
+    // If no count, increment and set expire
+    if (!count) {
+        await client.multi().incr(keyName).expire(keyName, expire).exec();
+    }
 
-    return rl;
+    // If there is a count that does not exceed the limit, increment
+    if (count) {
+        await client.incr(keyName);
+    }
+
+    return false;
 }
 
 async function main() {
-    // setInterval(() => rateLimit(), 10000);
+    setInterval(async () => console.log(await rateLimit()), 500);
 
-    await rateLimit('127.0.0.1');
+    // console.log(await rateLimit('127.0.0.1'));
 
-    process.exit(1);
+    // process.exit(1);
 }
 
 main();
