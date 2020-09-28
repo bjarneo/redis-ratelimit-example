@@ -35,12 +35,10 @@ async function rateLimit(key = '127.0.0.1', limit = 10, expire = 10) {
     return false;
 }
 
+const range = (max = 255) => (Math.floor(Math.random() * max) + 1);
+
 async function main() {
-    setInterval(async () => console.log(await rateLimit()), 500);
-
-    // console.log(await rateLimit('127.0.0.1'));
-
-    // process.exit(1);
+    setInterval(async () => console.log(await rateLimit(`${range()}.${range()}.${range()}.${range()}`)), 50);
 }
 
 main();
